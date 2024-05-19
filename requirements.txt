@@ -1,6 +1,4 @@
 pytesseract
 opencv-python-headless
 pillow
-mtcnn
 streamlit
-libgl1-mesa-glx
