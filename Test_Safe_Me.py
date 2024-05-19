@@ -5,6 +5,7 @@ from PIL import Image, ImageDraw, ImageFilter
 import numpy as np
 # from mtcnn.mtcnn import MTCNN
 from io import BytesIO
+import os
 
 
 # Install Tesseract if not installed
