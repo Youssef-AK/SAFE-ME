@@ -7,17 +7,9 @@ import numpy as np
 from io import BytesIO
 import os
 
-
-# Install Tesseract if not installed
-#if not os.path.exists('/usr/bin/tesseract'):
-#    st.error('Tesseract is not installed. Installing...')
-#    os.system('apt-get install tesseract-ocr')
-#    os.system('apt-get install libtesseract-dev')
-#    os.system('apt-get install tesseract-ocr-deu')
-#    st.success('Tesseract has been successfully installed.')
     
 # Path to Tesseract
-# pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 
 # Function to detect text in an image using Tesseract OCR
 def detect_text(image):
