@@ -2,3 +2,4 @@ pytesseract
 opencv-python-headless
 pillow
 streamlit
+tesseract-ocr
