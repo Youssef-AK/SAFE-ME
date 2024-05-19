@@ -3,7 +3,7 @@ import cv2
 import pytesseract
 from PIL import Image, ImageDraw, ImageFilter
 import numpy as np
-from mtcnn.mtcnn import MTCNN
+# from mtcnn.mtcnn import MTCNN
 from io import BytesIO
 
 # Function to detect text in an image using Tesseract OCR
