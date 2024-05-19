@@ -1,15 +1,32 @@
 import streamlit as st
-from PIL import Image, ImageDraw, ImageFilter
 import cv2
+import pytesseract
+from PIL import Image, ImageDraw, ImageFilter
 import numpy as np
-import time
+from mtcnn.mtcnn import MTCNN
+from io import BytesIO
 
-# Function to convert file to image
-def file_to_image(file):
-    image = np.array(Image.open(file))
-    return image
+# Function to detect text in an image using Tesseract OCR
+def detect_text(image):
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    custom_config = r'--oem 3 --psm 6'
+    d = pytesseract.image_to_data(gray_image, output_type=pytesseract.Output.DICT, config=custom_config)
+    n_boxes = len(d['level'])
+    boxes = []
+    for i in range(n_boxes):
+        if int(d['conf'][i]) > 60:  # confidence threshold
+            (x, y, w, h) = (d['left'][i], d['top'][i], d['width'][i], d['height'][i])
+            boxes.append((x, y, w, h))
+    return boxes
 
-# Function to blur specific areas in an image
+# Face Detection using OpenCV
+def detect_faces(image):
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray_image, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    return faces
+
+# Data Obscuring Functions
 def blur_area(image, boxes):
     pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(pil_image)
@@ -19,7 +36,6 @@ def blur_area(image, boxes):
         pil_image.paste(region, (x, y))
     return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
-# Function to pixelate specific areas in an image
 def pixelate_area(image, boxes, pixel_size=10):
     pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     for (x, y, w, h) in boxes:
@@ -29,7 +45,6 @@ def pixelate_area(image, boxes, pixel_size=10):
         pil_image.paste(region, (x, y))
     return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
-# Function to redact specific areas in an image
 def redact_area(image, boxes):
     pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(pil_image)
@@ -37,83 +52,73 @@ def redact_area(image, boxes):
         draw.rectangle((x, y, x+w, y+h), fill="black")
     return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
-logo = Image.open("icon.png")
 
+# Main function to process the image
+def process_image(image, method):
+    text_boxes = detect_text(image)
+    face_boxes = detect_faces(image)
+    
+    # Combine all boxes (you can add more detection methods and their boxes here)
+    all_boxes = text_boxes + face_boxes
+    
+    # Apply the selected obscuring method
+    if method == 'Blur':
+        processed_image = blur_area(image, all_boxes)
+    elif method == 'Pixelate':
+        processed_image = pixelate_area(image, all_boxes)
+    elif method == 'Redact':
+        processed_image = redact_area(image, all_boxes)
+    
+    return processed_image
+
+# Streamlit UI
+st.title('SAFE ME: Image Privacy Protection')
+st.write('Upload an image and choose an obscuring method to protect sensitive information.')
+
+uploaded_file = st.file_uploader('Choose an image...', type=['jpg', 'jpeg', 'png'])
+method = st.selectbox('Select Obscuring Method', ('Blur', 'Pixelate', 'Redact'))
+
+# Load the icon
+icon = Image.open('icon.png')
+
+# Display the icon
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    st.image(logo, use_column_width=True)
-
-st.write("")
-
-col1, col2, col3 = st.columns([2, 2, 1])
-with col2:
-    st.title("Safe Me")
-
-start_button = st.button("Start")
-
-if start_button:
-    st.empty()
-    st.title("Welcome to Safe Me!")
-
-st.write("")
-uploaded_file = st.file_uploader("Upload a photo", type=["png", "jpg", "jpeg"])
+    st.image(icon, use_column_width=True)
 
 if uploaded_file is not None:
-    # Convert file to image
-    image = file_to_image(uploaded_file)
+    # Read the uploaded image
+    image = np.array(Image.open(uploaded_file))
     
-    # Dummy function to detect sensitive areas (replace with your implementation)
-    def detect_sensitive_areas(image):
-        # This is a dummy function; replace with your actual detection logic
-        # Here, we return a single box for demonstration purposes
-        return [(100, 100, 200, 200)]  # Example box coordinates (x, y, width, height)
+    # Process the image
+    processed_image = process_image(image, method)
     
-    # Detect sensitive areas in the image (dummy implementation)
-    sensitive_boxes = detect_sensitive_areas(image)
+    # Display the original and processed images
+    st.image(image, caption='Original Image', use_column_width=True)
+    st.image(processed_image, caption='Processed Image', use_column_width=True)
     
-    # Apply blurring
-    image_blur = blur_area(image.copy(), sensitive_boxes)
-    
-    # Apply pixelation
-    image_pixelate = pixelate_area(image.copy(), sensitive_boxes, pixel_size=10)
-    
-    # Apply redaction
-    image_redact = redact_area(image.copy(), sensitive_boxes)
-    
-    with st.spinner('Obscuring in Progress...'):
-        time.sleep(2)
+    # Provide download link for the processed image
+    processed_pil_image = Image.fromarray(processed_image)
+    buffer = BytesIO()
+    processed_pil_image.save(buffer, format='JPEG')
+    buffer.seek(0)
+    st.download_button(label='Download Processed Image', data=buffer, file_name='processed_image.jpg', mime='image/jpeg')
 
-        # Display original image
-        st.image(image, caption="Uploaded Image", use_column_width=True)
-        st.write("You are now protected. Please copy your hash key or share it... ")
+    # Add share buttons
+    st.markdown("<h3>Share via:</h3>", unsafe_allow_html=True)
 
-        # Display blurred image
-        st.image(image_blur, caption="Blurred Image", use_column_width=True)
+    # Gmail icon and link
+    st.markdown(
+        """
+        <a href="https://mail.google.com/mail/?view=cm&fs=1&to&su=Check%20out%20this%20image%20uploaded%20to%20Safe%20Me:%20{}" target="_blank"><img src="https://static.vecteezy.com/system/resources/previews/016/716/465/large_2x/gmail-icon-free-png.png" alt="Gmail" width="48"/></a>
+        """.format(uploaded_file.name),
+        unsafe_allow_html=True
+    )
 
-        # Display pixelated image
-        st.image(image_pixelate, caption="Pixelated Image", use_column_width=True)
-
-        # Display redacted image
-        st.image(image_redact, caption="Redacted Image", use_column_width=True)
-
-        # Dummy hash key
-        st.write("Your hash key: 755ef97e0d59d280f3e73c3bedff351e")
-
-        # Add share buttons
-        st.write("<h3>Share via:</h3>", unsafe_allow_html=True)
-
-        # Gmail icon and link
-        st.markdown(
-            """
-            <a href="https://mail.google.com/mail/?view=cm&fs=1&to&su=Check%20out%20this%20image%20uploaded%20to%20Safe%20Me:%20{}" target="_blank"><img src="https://static.vecteezy.com/system/resources/previews/016/716/465/large_2x/gmail-icon-free-png.png" alt="Gmail" width="48"/></a>
-            """.format(uploaded_file.name),
-            unsafe_allow_html=True
-        )
-
-        # Telegram icon and link
-        st.markdown(
-            """
-            <a href="https://t.me/share/url?url=&text=Check%20out%20this%20image%20uploaded%20to%20Safe%20Me:%20{}" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/2048px-Telegram_logo.svg.png" alt="Telegram" width="48"/></a>
-            """.format(uploaded_file.name),
-            unsafe_allow_html=True
-        )
+    # Telegram icon and link
+    st.markdown(
+        """
+        <a href="https://t.me/share/url?url=&text=Check%20out%20this%20image%20uploaded%20to%20Safe%20Me:%20{}" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/2048px-Telegram_logo.svg.png" alt="Telegram" width="48"/></a>
+        """.format(uploaded_file.name),
+        unsafe_allow_html=True
+    )
