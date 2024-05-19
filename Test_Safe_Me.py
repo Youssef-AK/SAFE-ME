@@ -9,7 +9,7 @@ import os
 
     
 # Path to Tesseract
-pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
 # Function to detect text in an image using Tesseract OCR
 def detect_text(image):
