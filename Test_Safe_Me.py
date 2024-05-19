@@ -6,6 +6,14 @@ import numpy as np
 # from mtcnn.mtcnn import MTCNN
 from io import BytesIO
 
+
+# Check if Tesseract is installed and update path if necessary
+try:
+    pytesseract.pytesseract.tesseract_cmd = os.environ['TESSERACT_CMD']
+except:
+    pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
+
+
 # Function to detect text in an image using Tesseract OCR
 def detect_text(image):
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
