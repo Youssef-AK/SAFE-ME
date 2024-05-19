@@ -37,7 +37,7 @@ def redact_area(image, boxes):
         draw.rectangle((x, y, x+w, y+h), fill="black")
     return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
-logo = Image.open("logo.png")
+logo = Image.open("icon.png")
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
