@@ -5,7 +5,7 @@ import cv2
 import pytesseract
 
 # Set the path for Tesseract OCR
-pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"  # Update with the correct path
 
 # Text Detection using Tesseract OCR
 def detect_text(image):
