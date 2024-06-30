@@ -1,0 +1,47 @@
+# SAFE ME Solution
+
+SAFE ME is a privacy-enhancing tool designed to detect and obscure sensitive information in images. It provides functionalities to identify text and faces in images and apply obscuring techniques such as blurring, pixelation, and redaction.
+
+## Features
+
+- **Text Detection**: Uses Tesseract OCR to identify text regions in uploaded images.
+- **Face Detection**: Utilizes OpenCV's Haar Cascade classifiers to detect faces.
+- **Data Obscuring**:
+  - **Blur**: Blurs detected text and face regions using Gaussian blur.
+  - **Pixelation**: Pixelates sensitive areas to obscure details.
+  - **Redaction**: Blackens out identified regions to completely obscure information.
+
+## Getting Started
+
+To use SAFE ME locally:
+
+1. Clone the repository:
+
+   ```bash
+   git clone <repository_url>
+   cd SAFE-ME-Solution
+
+### Install dependencies:
+
+conda create -n safe_me_env python=3.9
+conda activate safe_me_env
+conda install -c conda-forge tesseract
+pip install pytesseract opencv-python-headless pillow streamlit
+
+### Set up Tesseract path (if not already set):
+import pytesseract
+pytesseract.pytesseract.tesseract_cmd = r'<path_to_tesseract_executable>'
+
+### Run the Streamlit application:
+streamlit run app.py
+
+
+### Upload an image and see the results!
+
+### Technologies Used
+- Python
+- OpenCV
+- Tesseract OCR
+- Pillow (PIL)
+- Streamlit
+
